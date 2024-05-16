@@ -151,7 +151,7 @@ public class MyTask
         return whenAllTask;
     }
 
-    //  
+    //  await keyword knows this method, compiles to iterate
     public Awaiter GetAwaiter() => new(this);
 }
 
