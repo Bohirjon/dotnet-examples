@@ -1,0 +1,121 @@
+using System.Runtime.ExceptionServices;
+
+namespace AsyncAwaitTaskExample;
+
+public class MyTask
+{
+    private bool _isCompleted;
+    private Exception _exception;
+    private ExecutionContext _executionContext;
+    private Action _continuation;
+
+    public bool IsCompleted => _isCompleted;
+    public void SetResult() => Complete(null);
+    public void SetException(Exception exception) => Complete(exception);
+
+    private void Complete(Exception exception)
+    {
+        _isCompleted = true;
+        _exception = exception;
+
+        if (_isCompleted)
+            throw new Exception("Task is completed");
+
+        if (_continuation is not null)
+        {
+            ThreadPoolWithExecutionContext.MyThreadPool.QueueUserWorkItem(() =>
+            {
+                if (_executionContext is not null)
+                {
+                    ExecutionContext.Run(_executionContext, state => _continuation.Invoke(), null);
+                }
+                else
+                {
+                    _continuation.Invoke();
+                }
+            });
+        }
+    }
+
+    public void ContinueWith(Action action)
+    {
+        if (_isCompleted)
+        {
+            ThreadPoolWithExecutionContext.MyThreadPool.QueueUserWorkItem(action);
+        }
+        else
+        {
+            _executionContext = ExecutionContext.Capture();
+            _continuation = action;
+        }
+    }
+
+    public void Wait()
+    {
+        ManualResetEventSlim manualResetEventSlim = null;
+
+        if (!IsCompleted)
+        {
+            manualResetEventSlim = new ManualResetEventSlim();
+            ContinueWith(manualResetEventSlim.Set);
+        }
+
+        manualResetEventSlim?.Wait();
+
+        if (_exception is not null)
+            ExceptionDispatchInfo.Throw(_exception);
+    }
+
+    public MyTask Delay(TimeSpan duration)
+    {
+        var task = new MyTask();
+        _ = new Timer(_ => task.SetResult()).Change(duration, TimeSpan.FromMilliseconds(-1));
+        return task;
+    }
+
+    public static MyTask Run(Action action)
+    {
+        var task = new MyTask();
+        ThreadPoolWithExecutionContext.MyThreadPool.QueueUserWorkItem(() =>
+        {
+            try
+            {
+                action.Invoke();
+            }
+            catch (Exception exception)
+            {
+                task.SetException(exception);
+                return;
+            }
+
+            task.SetResult();
+        });
+        return task;
+    }
+
+    public MyTask WhenAll(IList<MyTask> tasks)
+    {
+        var whenAllTask = new MyTask();
+
+        if (!tasks.Any())
+        {
+            whenAllTask.SetResult();
+        }
+        else
+        {
+            var remainingTasks = tasks.Count;
+            var continuation = () =>
+            {
+                // thread save decrement
+                if (Interlocked.Decrement(ref remainingTasks) == 0)
+                    whenAllTask.SetResult();
+            };
+            foreach (var task in tasks)
+            {
+                task.ContinueWith(continuation);
+            }
+        }
+
+        return whenAllTask;
+    }
+}
