@@ -26,22 +26,3 @@ public static class MyThreadPool
         }
     }
 }
-
-class Program
-{
-    static void Main(string[] args)
-    {
-        // has issue
-        for (var i = 0; i < 1000; i++)
-        {
-            MyThreadPool.QueueUserWorkItem(() => { Console.WriteLine(i); });
-        }
-
-        // no issue
-        for (var i = 0; i < 1000; i++)
-        {
-            var captured = i;
-            MyThreadPool.QueueUserWorkItem(() => Console.WriteLine(captured));
-        }
-    }
-}

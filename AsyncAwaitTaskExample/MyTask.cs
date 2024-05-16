@@ -23,7 +23,7 @@ public class MyTask
 
         if (_continuation is not null)
         {
-            ThreadPoolWithExecutionContext.MyThreadPool.QueueUserWorkItem(() =>
+            MyThreadPoolExContext.QueueUserWorkItem(() =>
             {
                 if (_executionContext is not null)
                 {
@@ -41,7 +41,7 @@ public class MyTask
     {
         if (_isCompleted)
         {
-            ThreadPoolWithExecutionContext.MyThreadPool.QueueUserWorkItem(action);
+            MyThreadPoolExContext.QueueUserWorkItem(action);
         }
         else
         {
@@ -76,7 +76,7 @@ public class MyTask
     public static MyTask Run(Action action)
     {
         var task = new MyTask();
-        ThreadPoolWithExecutionContext.MyThreadPool.QueueUserWorkItem(() =>
+        MyThreadPoolExContext.QueueUserWorkItem(() =>
         {
             try
             {
