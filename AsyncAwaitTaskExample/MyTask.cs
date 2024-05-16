@@ -16,11 +16,11 @@ public class MyTask
 
     private void Complete(Exception exception)
     {
+        if (IsCompleted)
+            throw new Exception("Task is completed");
+        
         _isCompleted = true;
         _exception = exception;
-
-        if (_isCompleted)
-            throw new Exception("Task is completed");
 
         if (_continuation is not null)
         {
@@ -67,10 +67,12 @@ public class MyTask
             ExceptionDispatchInfo.Throw(_exception);
     }
 
-    public static MyTask Delay(TimeSpan duration)
+    public static MyTask Delay(int duration)
     {
         var task = new MyTask();
-        _ = new Timer(_ => task.SetResult()).Change(duration, TimeSpan.FromMilliseconds(-1));
+
+        _ = new Timer(_ => task.SetResult()).Change(duration, -1);
+
         return task;
     }
 
