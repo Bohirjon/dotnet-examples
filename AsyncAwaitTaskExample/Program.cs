@@ -44,3 +44,13 @@ static IEnumerable<MyTask> DoAsync()
 }
 
 #endregion
+
+#region WithAwaitKeyword
+
+foreach (var value in Enumerable.Range(0, 1000))
+{
+    await MyTask.Delay(TimeSpan.FromSeconds(2));
+    Console.WriteLine(value);
+}
+
+#endregion

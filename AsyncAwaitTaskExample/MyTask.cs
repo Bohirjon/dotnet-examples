@@ -51,7 +51,6 @@ public class MyTask
         }
     }
 
-
     public void Wait()
     {
         ManualResetEventSlim manualResetEventSlim = null;
