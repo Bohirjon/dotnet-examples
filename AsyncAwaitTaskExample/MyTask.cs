@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
 namespace AsyncAwaitTaskExample;
@@ -49,6 +50,7 @@ public class MyTask
             _continuation = action;
         }
     }
+
 
     public void Wait()
     {
@@ -148,4 +150,15 @@ public class MyTask
 
         return whenAllTask;
     }
+
+    //  
+    public Awaiter GetAwaiter() => new(this);
+}
+
+public readonly struct Awaiter(MyTask task) : INotifyCompletion
+{
+    public bool IsCompleted => task.IsCompleted;
+    public void GetResult() => task.Wait();
+    public Awaiter GetAwaiter() => this;
+    public void OnCompleted(Action continuation) => task.ContinueWith(continuation);
 }
