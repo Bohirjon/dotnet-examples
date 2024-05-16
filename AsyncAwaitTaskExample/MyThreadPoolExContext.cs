@@ -26,11 +26,3 @@ public static class MyThreadPoolExContext
         }
     }
 }
-
-class Program
-{
-    static void Main(string[] args)
-    {
-      
-    }
-}
