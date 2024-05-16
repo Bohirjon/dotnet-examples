@@ -66,10 +66,40 @@ public class MyTask
             ExceptionDispatchInfo.Throw(_exception);
     }
 
-    public MyTask Delay(TimeSpan duration)
+    public static MyTask Delay(TimeSpan duration)
     {
         var task = new MyTask();
         _ = new Timer(_ => task.SetResult()).Change(duration, TimeSpan.FromMilliseconds(-1));
+        return task;
+    }
+
+    public static MyTask Iterate(IEnumerable<MyTask> tasks)
+    {
+        var task = new MyTask();
+
+        var enumerator = tasks.GetEnumerator();
+
+        void MoveNext()
+        {
+            try
+            {
+                if (enumerator.MoveNext())
+                {
+                    enumerator.Current?.ContinueWith(MoveNext);
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                task.SetException(e);
+                return;
+            }
+
+            task.SetResult();
+        }
+
+        MoveNext();
+
         return task;
     }
 

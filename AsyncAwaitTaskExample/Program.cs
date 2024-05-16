@@ -28,3 +28,19 @@ for (var i = 0; i < 1000; i++)
 }
 
 #endregion
+
+#region Iterate
+
+// this what async await generates
+MyTask.Iterate(DoAsync()).Wait();
+
+static IEnumerable<MyTask> DoAsync()
+{
+    for (var i = 0; i < 1000; i++)
+    {
+        yield return MyTask.Delay(TimeSpan.FromSeconds(2));
+        Console.WriteLine(i);
+    }
+}
+
+#endregion
