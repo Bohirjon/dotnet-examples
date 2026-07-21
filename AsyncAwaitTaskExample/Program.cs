@@ -31,21 +31,21 @@ using AsyncAwaitTaskExample;
 // #endregion
 //
 
-#region Iterate
-
-// this what async await generates
-MyTask.Iterate(DoAsync()).Wait();
-
-static IEnumerable<MyTask> DoAsync()
-{
-    for (var i = 0; i < 1000; i++)
-    {
-        yield return MyTask.Delay(1000);
-        Console.WriteLine(i);
-    }
-}
-
-#endregion
+// #region Iterate
+//
+// // this what async await generates
+// MyTask.Iterate(DoAsync()).Wait();
+//
+// static IEnumerable<MyTask> DoAsync()
+// {
+//     for (var i = 0; i < 1000; i++)
+//     {
+//         yield return MyTask.Delay(1000);
+//         Console.WriteLine(i);
+//     }
+// }
+//
+// #endregion
 
 // #region WithAwaitKeyword
 //
@@ -56,3 +56,19 @@ static IEnumerable<MyTask> DoAsync()
 // }
 //
 // #endregion
+
+#region AsyncKeyword
+
+// async keyword usage
+DoWithAsyncKeywordAsync().Wait();
+
+static async MyTask DoWithAsyncKeywordAsync()
+{
+    for (var i = 0; i < 1000; i++)
+    {
+        await MyTask.Delay(1000);
+        Console.WriteLine(i);
+    }
+}
+
+#endregion

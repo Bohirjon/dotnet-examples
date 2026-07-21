@@ -3,6 +3,8 @@ using System.Runtime.ExceptionServices;
 
 namespace AsyncAwaitTaskExample;
 
+//  async keyword knows this attribute, compiler builds the state machine
+[AsyncMethodBuilder(typeof(MyTaskMethodBuilder))]
 public class MyTask
 {
     private bool _isCompleted;
@@ -18,7 +20,7 @@ public class MyTask
     {
         if (IsCompleted)
             throw new Exception("Task is completed");
-        
+
         _isCompleted = true;
         _exception = exception;
 
@@ -40,14 +42,14 @@ public class MyTask
 
     public void ContinueWith(Action action)
     {
-        if (_isCompleted)
-        {
-            MyThreadPoolExContext.QueueUserWorkItem(action);
-        }
-        else
-        {
-            _executionContext = ExecutionContext.Capture();
-            _continuation = action;
+            if (_isCompleted)
+            {
+                MyThreadPoolExContext.QueueUserWorkItem(action);
+            }
+            else
+            {
+                _executionContext = ExecutionContext.Capture();
+                _continuation = action;
         }
     }
 
@@ -55,10 +57,10 @@ public class MyTask
     {
         ManualResetEventSlim manualResetEventSlim = null;
 
-        if (!IsCompleted)
-        {
-            manualResetEventSlim = new ManualResetEventSlim();
-            ContinueWith(manualResetEventSlim.Set);
+            if (!IsCompleted)
+            {
+                manualResetEventSlim = new ManualResetEventSlim();
+                ContinueWith(manualResetEventSlim.Set);
         }
 
         manualResetEventSlim?.Wait();
@@ -162,4 +164,43 @@ public readonly struct Awaiter(MyTask task) : INotifyCompletion
     public void GetResult() => task.Wait();
     public Awaiter GetAwaiter() => this;
     public void OnCompleted(Action continuation) => task.ContinueWith(continuation);
+}
+
+public struct MyTaskMethodBuilder
+{
+    public static MyTaskMethodBuilder Create() => new() { Task = new MyTask() };
+
+    public MyTask Task { get; private set; }
+
+    public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
+    {
+        var executionContext = ExecutionContext.Capture();
+        try
+        {
+            stateMachine.MoveNext();
+        }
+        finally
+        {
+            if (executionContext is not null)
+                ExecutionContext.Restore(executionContext);
+        }
+    }
+
+    public void SetStateMachine(IAsyncStateMachine stateMachine)
+    {
+    }
+
+    //  called when the async method body finishes
+    public void SetResult() => Task.SetResult();
+    public void SetException(Exception exception) => Task.SetException(exception);
+
+    public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+        where TAwaiter : INotifyCompletion
+        where TStateMachine : IAsyncStateMachine
+        => awaiter.OnCompleted(stateMachine.MoveNext);
+
+    public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+        where TAwaiter : ICriticalNotifyCompletion
+        where TStateMachine : IAsyncStateMachine
+        => AwaitOnCompleted(ref awaiter, ref stateMachine);
 }
